@@ -11,9 +11,15 @@ const definition = {
         set(value) {
             this.setDataValue("password", bcrypt.hashSync(value, 8));
         },
-        role: { type: DataTypes.ENUM("student", "instructor", "admin"), allowNull: false, defaultValue: "student "}
-    }
+        
+    },
+    // role was inside password before
+    role: { type: DataTypes.ENUM("student", "instructor", "admin"), allowNull: false, defaultValue: "student "}
 };
+
+const User = sequelize.define("user", definition);
+
+// TODO Setup relationshis between user and the other schemas
 
 exports.User = User;
 exports.UserClientFields = Object.keys(definition);
