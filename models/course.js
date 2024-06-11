@@ -1,11 +1,11 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../lib/sequelize");
-const { User } = require("/User"); 
+const { User } = require("./user"); 
 
 const definition = {
     subject: { type: DataTypes.STRING, allowNull: false },
-    number: { type: DataTypes.STRING, allowNull: false, unique: true },
-    title: { type: DataTypes.STRING, allowNull: false, unique: true },
+    number: { type: DataTypes.STRING, allowNull: false },
+    title: { type: DataTypes.STRING, allowNull: false },
     term: { type: DataTypes.STRING, allowNull: false },
     instructorId: { type: DataTypes.INTEGER, allowNull: false } 
 };

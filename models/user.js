@@ -3,6 +3,11 @@ const bcrypt = require("bcryptjs");
 const sequelize = require("../lib/sequelize");
 
 const definition = {
+    id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        primaryKey: true
+    },
     name: { type: DataTypes.STRING, allowNull: false },
     email: { type: DataTypes.STRING, allowNull: false, unique: true },
     password: {
@@ -19,7 +24,9 @@ const definition = {
 
 const User = sequelize.define("user", definition);
 
-// TODO Setup relationshis between user and the other schemas
+/*
+ * TODO Setup relationshis between user and the other schemas
+ */
 
 exports.User = User;
 exports.UserClientFields = Object.keys(definition);
