@@ -3,6 +3,7 @@ const { ValidationError } = require("sequelize")
 const { User } = require("../models/user")
 const { Course, CourseClientFields } = require("../models/course")
 const { requireAuthentication, requireAdmin, requireUserMatchRecord } = require("../lib/auth");
+const { validateBody } = require("../lib/bodyValidator");
 
 const router = Router()
 
@@ -43,7 +44,7 @@ router.get("/", async function (req, res, next) {
 router.get("/:id", async function (req, res, next) {
     const id = req.params.id
     
-    try {
+    try { 
         const course = await Course.findByPk(id)
         if (course) {
             res.status(200).send({
@@ -53,7 +54,7 @@ router.get("/:id", async function (req, res, next) {
                 term: course.term,
                 instructorId: course.instructorId
             })
-        } else {
+        } else { // 404
             next()
         }
     } catch (e) {
@@ -62,7 +63,7 @@ router.get("/:id", async function (req, res, next) {
 })
 
 // Creates a new Course with specified data and adds it to the application's database
-router.post("/", requireAuthentication, requireAdmin, async function (req, res, next) {
+router.post("/", requireAuthentication, requireAdmin, validateBody(["subject", "number", "title", "term", "instructorId"]), async function (req, res, next) {
     try {
         
         // Validate that the instructorId corresponds to a user with the 'instructor' role
