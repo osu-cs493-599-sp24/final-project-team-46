@@ -4,12 +4,13 @@ const { ValidationError } = require("sequelize")
 const { User, UserClientFields } = require("../models/user")
 const { Course } = require("../models/course")
 const { generateAuthToken, authenticate, requireAuthentication, requireUserMatchReq } = require("../lib/auth")
+const { rateLimitAuth, rateLimitNoAuth } = require("../lib/redis");
 const bcrypt = require('bcryptjs')
 const router = Router()
 
 
 // Create and store a new application User with specified data and adds it to the application's database.
-router.post("/", async function (req, res, next) {
+router.post("/", rateLimitNoAuth, async function (req, res, next) {
     if(req.body && req.body.role && req.body.role.toLowerCase() != "student") {
         try {
             const payload = authenticate(req);
@@ -41,7 +42,7 @@ router.post("/", async function (req, res, next) {
 })
 
 // Authenticate a specific User with their email address and password.
-router.post("/login", async function (req, res, next) {
+router.post("/login", rateLimitNoAuth, async function (req, res, next) {
     const { email, password } = req.body
 
     // Check if email and password fields are present
@@ -76,7 +77,7 @@ router.post("/login", async function (req, res, next) {
 })
 
 // Returns information about the specified User.
-router.get("/:id", requireAuthentication, requireUserMatchReq((req) => req.params.id), async function (req, res, next) {
+router.get("/:id", requireAuthentication, rateLimitAuth, requireUserMatchReq((req) => req.params.id), async function (req, res, next) {
     const id = parseInt(req.params.id)
 
     try {
