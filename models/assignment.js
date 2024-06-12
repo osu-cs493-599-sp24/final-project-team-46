@@ -1,7 +1,7 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../lib/sequelize");
 
-const Assignment = sequelize.define("assignment", {
+const definition = {
     title: {
         type: DataTypes.STRING,
         allowNull: false
@@ -17,9 +17,9 @@ const Assignment = sequelize.define("assignment", {
             isDate: true
         }
     }
-});
-
-module.exports = {
-    Assignment,
-    AssignmentClientFields: ['courseId', 'title', 'points', 'due']
 };
+
+const Assignment = sequelize.define("assignment", definition);
+
+module.exports.Assignment = Assignment;
+module.exports.AssignmentClientFields = Object.keys(definition).concat("courseId");

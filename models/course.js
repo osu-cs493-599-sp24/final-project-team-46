@@ -10,5 +10,5 @@ const definition = {
 
 const Course = sequelize.define("course", definition);
 
-exports.Course = Course;
-exports.CourseClientFields = Object.keys(definition);
+module.exports.Course = Course;
+module.exports.CourseClientFields = Object.keys(definition).concat("instructorId");
