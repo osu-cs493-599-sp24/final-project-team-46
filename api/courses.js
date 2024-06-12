@@ -3,7 +3,7 @@ const { ValidationError } = require("sequelize")
 const { User } = require("../models/user")
 const { Course, CourseClientFields } = require("../models/course")
 const { requireAuthentication, requireAdmin, requireUserMatchRecord } = require("../lib/auth");
-const { validateBody } = require("../lib/bodyValidator");
+const { validateBody, bodyExists } = require("../lib/bodyValidator");
 
 const router = Router()
 
@@ -87,7 +87,7 @@ router.post("/", requireAuthentication, requireAdmin, validateBody(["subject", "
 })
 
 // Performs a partial update on the data for the Course.
-router.patch("/:id", requireAuthentication, requireUserMatchRecord((req) => req.params.id, (dataValues => dataValues.instructorId), Course), async function (req, res, next) {
+router.patch("/:id", requireAuthentication, requireUserMatchRecord((req) => req.params.id, (dataValues => dataValues.instructorId), Course), bodyExists, async function (req, res, next) {
     /*
      * TODO: Make sure that enrolled students and assignments cannot be modified via this endpoint
      */ 
