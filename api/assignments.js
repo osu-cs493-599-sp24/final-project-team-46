@@ -1,10 +1,11 @@
 const { Router } = require('express')
 const { ValidationError } = require("sequelize")
 const { Assignment, AssignmentClientFields } = require("../models/assignment")
-const { Submission, SubmissionClientFields } = require('../models/submission');
+const { Submission, SubmissionClientFields } = require('../models/submission')
+const { Course } = require("../models/course")
+const { User } = require("../models/user")
 const { rateLimitAuth, rateLimitNoAuth } = require("../lib/redis");
 const { validateBody, bodyExists } = require("../lib/bodyValidator");
-const { Submission, SubmissionClientFields } = require('../models/submission')
 const express = require('express')
 const multer = require("multer")
 const crypto = require("node:crypto")
@@ -29,9 +30,6 @@ const upload = multer({
 });
 
 const matchingInstructorMiddleware = requireUserMatchRecord((req) => req.body.courseId, (dataValues) => dataValues.instructorId, Course);
-
-// Create and store a new Assignment with specified data and adds it to the application's database
-router.post("/", rateLimitNoAuth, async function (req, res, next) {
 
 // Create and store a new Assignment with specified data and adds it to the application's database
 router.post("/", requireAuthentication, rateLimitAuth, validateBody(AssignmentClientFields), matchingInstructorMiddleware, async function (req, res, next) {
@@ -180,7 +178,7 @@ router.post('/:id/submissions', requireAuthentication, rateLimitAuth, validateBo
             studentId,
             timestamp,
             file: req.file.filename, // Store the file path
-        }
+        })
 
         res.status(201).send({
             id: submission.id,
