@@ -29,6 +29,7 @@ const upload = multer({
 });
 
 const matchingInstructorMiddleware = requireUserMatchRecord((req) => req.body.courseId, (dataValues) => dataValues.instructorId, Course);
+const matchingInstructorMiddlewareAssignmentId = requireUserMatchRecord((req) => req.params.id, (dataValues) => dataValues.course.dataValues.instructorId, Assignment, [Course]);
 
 // Create and store a new Assignment with specified data and adds it to the application's database
 router.post("/", requireAuthentication, rateLimitAuth, validateBody(AssignmentClientFields), matchingInstructorMiddleware, async function (req, res, next) {
@@ -66,7 +67,7 @@ router.get("/:id", rateLimitNoAuth, async function (req, res, next) {
 })
 
 // Performs a partial update on the data for the Assignment. Note that submissions cannot be modified via this endpoint
-router.patch("/:id", requireAuthentication, rateLimitAuth, matchingInstructorMiddleware, bodyExists, async function (req, res, next) {
+router.patch("/:id", requireAuthentication, rateLimitAuth, matchingInstructorMiddlewareAssignmentId, bodyExists, async function (req, res, next) {
     const id = req.params.id
     try {
         const assignment = await Assignment.update(req.body, {
@@ -84,7 +85,7 @@ router.patch("/:id", requireAuthentication, rateLimitAuth, matchingInstructorMid
 })
 
 // Completely removes the data for the specified Assignment, including all submissions
-router.delete("/:id", requireAuthentication, rateLimitAuth, matchingInstructorMiddleware, async function (req, res, next) {
+router.delete("/:id", requireAuthentication, rateLimitAuth, matchingInstructorMiddlewareAssignmentId, async function (req, res, next) {
     const id = req.params.id
     try {
         const assignment = await Assignment.findByPk(id)
@@ -175,13 +176,19 @@ router.post('/:id/submissions', requireAuthentication, rateLimitAuth, upload.sin
             return res.status(404).send({ "error": "Assignment not found." });
         }
       
-        const user = await User.findByPk(studentId, { include: Course });
+        const user = await User.findByPk(studentId, {
+            include: [{
+                model: Course,
+                as: "enrolled_courses",
+                attributes: ["id"]
+            }]
+        });
         if(!user) {
             return res.status(400).send({ "error": "Associated student is invalid." });
         }
 
         let found = false;
-        for(const course of user.dataValues.courses) {
+        for(const course of user.dataValues.enrolled_courses) {
             if(course.dataValues.id == assignment.dataValues.courseId) {
                 found = true;
                 break;

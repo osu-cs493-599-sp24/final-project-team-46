@@ -141,13 +141,14 @@ router.get('/:id/students', requireAuthentication, rateLimitAuth, matchingInstru
             where: { id: courseId },
             include: [{
                 model: User,
-                attributes: ['id'] // Only fetch User IDs
+                as: "students",
+                attributes: ['name', 'email', 'role'] // Only fetch desired elements
             }]
         });
     
         if (course) {
-            const studentIds = course.users.map(user => user.id);
-            res.status(200).json(studentIds); // Send the list of student IDs
+            const students = course.students ?? [];
+            res.status(200).json({"students": students}); // Send the list of student IDs
         } else {
             res.status(404).send({ "error": "Course not found" });
         }
@@ -157,7 +158,7 @@ router.get('/:id/students', requireAuthentication, rateLimitAuth, matchingInstru
 });
 
 // Update enrollment for a course
-router.post('/:id/students', requireAuthentication, rateLimitAuth, matchingInstructorMiddleware, async function (req, res, next) {
+router.post('/:id/students', requireAuthentication, rateLimitAuth, bodyExists, matchingInstructorMiddleware, async function (req, res, next) {
     const courseId = parseInt(req.params.id);
     const { add, remove } = req.body;
 
@@ -173,7 +174,7 @@ router.post('/:id/students', requireAuthentication, rateLimitAuth, matchingInstr
             for (const userId of add) {
                 const user = await User.findByPk(userId);
                 if (user) {
-                    await course.addUser(user);
+                    await course.addStudents([user]);
                 }
             }
         }
@@ -183,7 +184,7 @@ router.post('/:id/students', requireAuthentication, rateLimitAuth, matchingInstr
             for (const userId of remove) {
                 const user = await User.findByPk(userId);
                 if (user) {
-                    await course.removeUser(user);
+                    await course.removeStudents([user]);
                 }
             }
         }
@@ -245,8 +246,8 @@ router.get("/:id/assignments", rateLimitNoAuth, async function (req, res, next) 
 
         const assignments = await Assignment.findAll({
             where: { courseId: courseId },
-            attributes: ['id']
-        })
+            attributes: ['courseId', 'title', 'points', 'due']
+        });
         res.status(200).send({
             assignments: assignments
         })
