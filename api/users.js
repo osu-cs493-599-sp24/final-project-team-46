@@ -5,7 +5,6 @@ const { User, UserClientFields } = require("../models/user")
 const { Course } = require("../models/course")
 const { generateAuthToken, authenticate, requireAuthentication, requireUserMatchReq } = require("../lib/auth")
 const { rateLimitAuth, rateLimitNoAuth } = require("../lib/redis");
-const { validateBody, bodyExists } = require("../lib/bodyValidator");
 const bcrypt = require('bcryptjs')
 const router = Router()
 
@@ -83,38 +82,39 @@ router.get("/:id", requireAuthentication, rateLimitAuth, requireUserMatchReq((re
 
     try {
         const user = await User.findByPk(id, {
-            attributes: { exclude: ['password'] }
-          })
+            attributes: { exclude: ['password'] },
+            include: {
+                model: Course,
+                as: "enrolled_courses",
+                attributes: ["id"]
+            }
+          });
 
         if (!user) {
             return res.status(404).send({ error: "User not found." })
         }
        
-       /*
-        * TODO still need to implement this:
-        *  If the User has the 'student' role, the response should include a list of the IDs of the Courses the User is enrolled in
-        */
+        const userFields = UserClientFields.filter(field => field != "password");
+        const userData = Object.fromEntries(Object.entries(user.dataValues).filter(e => userFields.includes(e[0])));
+
        if (user.role === "student") {
-        res.status(200).send({
-            name: user.name,
-            email: user.email,
-            role: user.role
-        })
+            const courses = user.enrolled_courses.map(course => course.dataValues.id);
+            res.status(200).send({
+               ...userData,
+               courses: courses 
+            });
        } else if (user.role === "instructor") {
-        // If the user is an instructor, find all courses they teach
-        const courseList = await Course.findAll({
-            where: { instructorId: id },
-            attributes: ['id']
-        })
-        const coursesIds = courseList.map(course => course.id);
-        res.status(200).send({
-            courses: coursesIds
-        })
-       } else {
-        res.status(200).send(user)
+            // If the user is an instructor, find all courses they teach
+            const courseList = await Course.findAll({
+                where: { instructorId: id },
+                attributes: ['id']
+            })
+            const coursesIds = courseList.map(course => course.id);
+            res.status(200).send({
+               ...userData,
+               courses: coursesIds 
+            })
        }
-       
-      
     } catch (e) {
         next(e)
     }

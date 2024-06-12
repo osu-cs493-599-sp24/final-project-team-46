@@ -6,7 +6,6 @@ const { Course } = require("../models/course")
 const { User } = require("../models/user")
 const { rateLimitAuth, rateLimitNoAuth } = require("../lib/redis");
 const { validateBody, bodyExists } = require("../lib/bodyValidator");
-const express = require('express')
 const multer = require("multer")
 const crypto = require("node:crypto")
 const path = require("path");
@@ -128,7 +127,7 @@ router.get('/:id/submissions', requireAuthentication, rateLimitAuth, matchingIns
     }
 });
 
-router.post('/:id/submissions', requireAuthentication, rateLimitAuth, validateBody(["assignmentId", "studentId", "timestamp"]), upload.single('file'), async function (req, res, next) {
+router.post('/:id/submissions', requireAuthentication, rateLimitAuth, upload.single('file'), async function (req, res, next) {
     /*
         This endpoint is "special" in that the middleware we're using for all of our other authentication doesn't work (efficiently) with the needs of this endpoint.
         We need to...
@@ -139,6 +138,15 @@ router.post('/:id/submissions', requireAuthentication, rateLimitAuth, validateBo
 
         In addition to basic authentication, rate limiting, and body validation middleware that DO work for this endpoint.
     */
+
+    if(!req.file) {
+        return res.status(400).send({"error": "No attached file."});
+    }
+
+    if(!(req.body.assignmentId && req.body.studentId && req.body.timestamp)) {
+        return res.status(400).send({"error": "Malformed body."});
+    }
+
     const assignmentId = parseInt(req.params.id);
     const studentId = req.body.studentId;
     const { timestamp } = req.body;

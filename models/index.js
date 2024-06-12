@@ -17,8 +17,8 @@ function buildAssociations() {
     Course.hasMany(Assignment, { foreignKey: "courseId", allowNull: false });
     Assignment.belongsTo(Course, { foreignKey: "courseId", allowNull: false });
 
-    User.belongsToMany(Course, { through: "CourseEnrollments" });
-    Course.belongsToMany(User, { through: "CourseEnrollments" });
+    User.belongsToMany(Course, { through: "course_enrollments", as: "enrolled_courses" });
+    Course.belongsToMany(User, { through: "course_enrollments", as: "students" });
 }
 
 module.exports = buildAssociations;

@@ -189,7 +189,7 @@ router.post('/:id/students', requireAuthentication, rateLimitAuth, matchingInstr
 });
 
 // Fetch a CSV file containing list of the students enrolled in the Course.
-router.get("/:id/roster", async function (req, res, next) {
+router.get("/:id/roster", requireAuthentication, rateLimitAuth, matchingInstructorMiddleware, async function (req, res, next) {
     const courseId = parseInt(req.params.id);
 
     try {
@@ -197,6 +197,7 @@ router.get("/:id/roster", async function (req, res, next) {
             where: { id: courseId },
             include: {
                 model: User,
+                as: "students",
                 attributes: ['id', 'name', 'email']
             }
         });
@@ -205,10 +206,10 @@ router.get("/:id/roster", async function (req, res, next) {
             return res.status(404).send({ error: "string" });
         }
 
-        const students = course.users.map(student => ({
-            id: student.id,
-            name: student.name,
-            email: student.email
+        const students = course.students.map(student => ({
+            id: student.dataValues.id,
+            name: student.dataValues.name,
+            email: student.dataValues.email
         }));
 
         let csv = 'ID,Name,Email\n';

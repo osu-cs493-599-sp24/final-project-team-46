@@ -7,7 +7,6 @@ const buildAssociations = require('./models/index')
 const api = require("./api");
 const sequelize = require("./lib/sequelize");
 const { redisClient } = require("./lib/redis");
-const { connectToRabbitMQ } = require("./lib/rabbitmq")
 
 const app = express();
 const port = process.env.PORT || 8000;
@@ -30,6 +29,5 @@ buildAssociations();
 
 sequelize.sync().then(async function() {
     await redisClient.connect();
-    await connectToRabbitMQ()
     app.listen(port, () => console.log("Server started on port", port))
 })
