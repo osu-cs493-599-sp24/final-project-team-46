@@ -24,8 +24,14 @@ router.get("/", rateLimitNoAuth, async function (req, res, next) {
     const offset = (page - 1) * numPerPage
 
     try {
+        whereConditions = {};
+        if(req.query.subject) whereConditions.subject = req.query.subject;
+        if(req.query.number) whereConditions.number = req.query.number;
+        if(req.query.term) whereConditions.term = req.query.term;
+
         // Stores the list of all the courses into courseList
         const courseList = await Course.findAndCountAll({
+            where: whereConditions,
             limit: numPerPage,
             offset: offset
         })
