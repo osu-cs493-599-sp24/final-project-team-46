@@ -1,13 +1,31 @@
 const { Router } = require('express')
 const { ValidationError } = require("sequelize")
-const { User } = require("../models/user")
-const { Course } = require("../models/course")
 const { Assignment, AssignmentClientFields } = require("../models/assignment")
 const { rateLimitAuth, rateLimitNoAuth } = require("../lib/redis");
 const { validateBody, bodyExists } = require("../lib/bodyValidator");
 const { Submission, SubmissionClientFields } = require('../models/submission')
-
+const express = require('express')
+const multer = require("multer")
+const crypto = require("node:crypto")
+const path = require("path");
 const router = Router()
+
+
+// Multer storage configuration using the original filename
+const storage = multer.diskStorage({
+    destination: `${__dirname}/uploads`,
+    filename: (req, file, callback) => {
+        const filename = crypto.pseudoRandomBytes(16).toString('hex')
+        const extension = path.extname(file.originalname);
+        callback(null, `${filename}${extension}`)
+    }
+});
+
+// Multer upload configuration
+const upload = multer({
+    storage: storage
+});
+
 
 // Create and store a new Assignment with specified data and adds it to the application's database
 router.post("/", rateLimitNoAuth, async function (req, res, next) {
@@ -94,13 +112,17 @@ router.get('/:id/submissions', async function (req, res, next) {
             where: { id: assignmentId },
             include: [{
                 model: Submission,
+                // DEBUG
                 // attributes: ['id'] // Only fetch User IDs
             }]
         });
-        console.log(assignment)
+        
         if (assignment) {
-            const submissionList = assignment.submissions.map(submission => submission);
-            res.status(200).json(submissionList); // Send the list of student IDs
+            let submissionList = assignment.submissions.map(submission => submission);
+            for (const submission of submissionList) {
+                submission.file = `/media/submissions/${submission.file}`
+            }
+            res.status(200).json(submissionList);
         } else {
             res.status(404).send({ message: "Assignment not found" });
         }
@@ -110,27 +132,32 @@ router.get('/:id/submissions', async function (req, res, next) {
 });
 
 // Create and store a new Assignment with specified data and adds it to the application's database
-router.post('/:id/submissions', async function (req, res, next) {
+router.post('/:id/submissions', upload.single('file'), async function (req, res, next) {
     const assignmentId = parseInt(req.params.id);
+    const studentId = req.body.studentId;
+    const { timestamp } = req.body;
 
     try {
         const assignment = await Assignment.findOne({ where: { id: assignmentId } });
 
         if (!assignment) {
-            return res.status(404).send({ message: "Assignment not found" });
+            return res.status(404).send({ error: "string" });
         }
 
-        const timestamp = new Date().toISOString(); // Get current date-time in ISO 8601 format
-
-        
-        const submission = await Submission.create(req.body, {
-            fields: SubmissionClientFields
+        const submission = await Submission.create({
+            assignmentId,
+            studentId,
+            timestamp,
+            file: req.file.filename, // Store the file path
         });
 
-        res.status(201).send({ id: submission.id });
+        res.status(201).send({
+            id: submission.id,
+        });
     } catch (e) {
         next(e);
     }
 });
+
 
 module.exports = router
