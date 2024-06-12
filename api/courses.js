@@ -7,6 +7,7 @@ const { requireAuthentication, requireAdmin, requireUserMatchRecord } = require(
 const { rateLimitAuth, rateLimitNoAuth } = require("../lib/redis");
 const { validateBody, bodyExists } = require("../lib/bodyValidator");
 
+
 const router = Router()
 
 // Returns the list of all Courses. This list should be paginated
@@ -189,7 +190,40 @@ router.post('/:id/students', async function (req, res, next) {
 });
 
 // Fetch a CSV file containing list of the students enrolled in the Course.
+router.get("/:id/roster", async function (req, res, next) {
+    const courseId = parseInt(req.params.id);
 
+    try {
+        const course = await Course.findOne({
+            where: { id: courseId },
+            include: {
+                model: User,
+                attributes: ['id', 'name', 'email']
+            }
+        });
+
+        if (!course) {
+            return res.status(404).send({ error: "string" });
+        }
+
+        const students = course.users.map(student => ({
+            id: student.id,
+            name: student.name,
+            email: student.email
+        }));
+
+        let csv = 'ID,Name,Email\n';
+        students.forEach(student => {
+            csv += `${student.id},${student.name},${student.email}\n`;
+        });
+
+        res.header('Content-Type', 'text/csv');
+        res.attachment(`course_${courseId}_roster.csv`);
+        res.status(200).send(csv);
+    } catch (e) {
+        next(e);
+    }
+})
 
 // Returns a list containing the Assignment IDs of all Assignments for the Course.
 router.get("/:id/assignments", async function (req, res, next) {
