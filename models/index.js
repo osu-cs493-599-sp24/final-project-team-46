@@ -8,6 +8,9 @@ function buildAssociations() {
     User.hasMany(Submission, { foreignKey: "studentId", allowNull: false });
     Submission.belongsTo(User, { foreignKey: "studentId", allowNull: false });
 
+    User.hasMany(Course, { foreignKey: "instructorId", allowNull: false });
+    Course.belongsTo(User, { foreignKey: "instructorId", allowNull: false })
+
     Assignment.hasMany(Submission, { foreignKey: "assignmentId", allowNull: false });
     Submission.belongsTo(Assignment, { foreignKey: "assignmentId", allowNull: false });
 

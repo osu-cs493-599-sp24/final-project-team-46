@@ -1,7 +1,7 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../lib/sequelize");
 
-const Submission = sequelize.define("submission", {
+const definition = {
     timestamp: {
         type: DataTypes.DATE,
         allowNull: false,
@@ -15,7 +15,9 @@ const Submission = sequelize.define("submission", {
         type: DataTypes.STRING,
         allowNull: false
     }
-});
+}
 
-module.exports = { Submission };
-exports.SubmissionClientFields = Object.keys("submission");
+const Submission = sequelize.define("submission", definition);
+
+module.exports.Submission = Submission;
+module.exports.SubmissionClientFields = Object.keys(definition).concat("studentId", "assignmentId");

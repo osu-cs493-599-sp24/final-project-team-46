@@ -9,6 +9,8 @@ const { validateBody, bodyExists } = require("../lib/bodyValidator");
 
 const router = Router()
 
+const matchingInstructorMiddleware = requireUserMatchRecord((req) => req.params.id, (dataValues) => dataValues.instructorId, Course);
+
 // Returns the list of all Courses. This list should be paginated
 router.get("/", rateLimitNoAuth, async function (req, res, next) {
     /*
@@ -65,7 +67,7 @@ router.get("/:id", rateLimitNoAuth, async function (req, res, next) {
 })
 
 // Creates a new Course with specified data and adds it to the application's database
-router.post("/", requireAuthentication, rateLimitAuth, requireAdmin, validateBody(["subject", "number", "title", "term", "instructorId"]), async function (req, res, next) {
+router.post("/", requireAuthentication, rateLimitAuth, requireAdmin, validateBody(CourseClientFields), async function (req, res, next) {
     try {
         
         // Validate that the instructorId corresponds to a user with the 'instructor' role
@@ -90,9 +92,6 @@ router.post("/", requireAuthentication, rateLimitAuth, requireAdmin, validateBod
 
 // Performs a partial update on the data for the Course.
 router.patch("/:id", requireAuthentication, rateLimitAuth, requireUserMatchRecord((req) => req.params.id, (dataValues => dataValues.instructorId), Course), bodyExists, async function (req, res, next) {
-    /*
-     * TODO: Make sure that enrolled students and assignments cannot be modified via this endpoint
-     */ 
     const id = req.params.id
     try {
         const course = await Course.update(req.body, {
@@ -100,7 +99,7 @@ router.patch("/:id", requireAuthentication, rateLimitAuth, requireUserMatchRecor
             fields: CourseClientFields
         })
         if (course[0] > 0) {
-            res.status(200).send({ message: "Course successfully updated"})
+            res.status(200).send();
         } else {
             next()
         }
@@ -121,14 +120,14 @@ router.delete("/:id", requireAuthentication, rateLimitAuth, requireAdmin, async 
         }
 
         await Course.destroy({ where: {id: id} })
-        res.status(204).send({ message: "Course successfully deleted"})
+        res.status(204).send();
     } catch (e) {
         next(e)
     }
 })
 
 // Returns a list containing the User IDs of all students currently enrolled in the Course.
-router.get('/:id/students', async function (req, res, next) {
+router.get('/:id/students', requireAuthentication, rateLimitAuth, matchingInstructorMiddleware, async function (req, res, next) {
     const courseId = parseInt(req.params.id);
     try {
         const course = await Course.findOne({
@@ -143,7 +142,7 @@ router.get('/:id/students', async function (req, res, next) {
             const studentIds = course.users.map(user => user.id);
             res.status(200).json(studentIds); // Send the list of student IDs
         } else {
-            res.status(404).send({ message: "Course not found" });
+            res.status(404).send({ "error": "Course not found" });
         }
     } catch (e) {
         next(e);
@@ -151,7 +150,7 @@ router.get('/:id/students', async function (req, res, next) {
 });
 
 // Update enrollment for a course
-router.post('/:id/students', async function (req, res, next) {
+router.post('/:id/students', requireAuthentication, rateLimitAuth, matchingInstructorMiddleware, async function (req, res, next) {
     const courseId = parseInt(req.params.id);
     const { add, remove } = req.body;
 
@@ -159,7 +158,7 @@ router.post('/:id/students', async function (req, res, next) {
         const course = await Course.findOne({ where: { id: courseId } });
 
         if (!course) {
-            return res.status(404).send({ message: "Course not found" });
+            return res.status(404).send({ "error": "Course not found" });
         }
 
         // Enroll students
@@ -182,7 +181,7 @@ router.post('/:id/students', async function (req, res, next) {
             }
         }
 
-        res.status(200).send({ message: "Enrollment updated successfully" });
+        res.status(200).send();
     } catch (e) {
         next(e);
     }
@@ -192,7 +191,7 @@ router.post('/:id/students', async function (req, res, next) {
 
 
 // Returns a list containing the Assignment IDs of all Assignments for the Course.
-router.get("/:id/assignments", async function (req, res, next) {
+router.get("/:id/assignments", rateLimitNoAuth, async function (req, res, next) {
 
     const courseId = req.params.id
 
@@ -200,7 +199,7 @@ router.get("/:id/assignments", async function (req, res, next) {
         // Check if the course exists
         const course = await Course.findByPk(courseId);
         if (!course) {
-            return res.status(404).send({ message: "Course not found" });
+            return res.status(404).send({ "error": "Course not found" });
         }
 
         const assignments = await Assignment.findAll({
