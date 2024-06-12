@@ -2,14 +2,6 @@ const { DataTypes } = require("sequelize");
 const sequelize = require("../lib/sequelize");
 
 const Submission = sequelize.define("submission", {
-    assignmentId: {
-        type: DataTypes.INTEGER,
-        allowNull: false
-    },
-    studentId: {
-        type: DataTypes.INTEGER,
-        allowNull: false
-    },
     timestamp: {
         type: DataTypes.DATE,
         allowNull: false,
@@ -26,3 +18,4 @@ const Submission = sequelize.define("submission", {
 });
 
 module.exports = { Submission };
+exports.SubmissionClientFields = Object.keys("submission");

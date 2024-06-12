@@ -25,8 +25,9 @@ app.use("*", function (err, req, res, next) {
     res.status(500).send({error: `Internal server error. Try again later.`});
 });
 
+buildAssociations();
+
 sequelize.sync().then(async function() {
-    buildAssociations()
     await redisClient.connect();
     app.listen(port, () => console.log("Server started on port", port))
 })

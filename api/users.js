@@ -5,6 +5,7 @@ const { User, UserClientFields } = require("../models/user")
 const { Course } = require("../models/course")
 const { generateAuthToken, authenticate, requireAuthentication, requireUserMatchReq } = require("../lib/auth")
 const { rateLimitAuth, rateLimitNoAuth } = require("../lib/redis");
+const { validateBody, bodyExists } = require("../lib/bodyValidator");
 const bcrypt = require('bcryptjs')
 const router = Router()
 
