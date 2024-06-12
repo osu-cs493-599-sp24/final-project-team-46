@@ -209,7 +209,7 @@ router.get("/:id/roster", requireAuthentication, rateLimitAuth, matchingInstruct
         });
 
         if (!course) {
-            return res.status(404).send({ error: "string" });
+            return res.status(404).send({ error: "Course not found." });
         }
 
         const students = course.students.map(student => ({
