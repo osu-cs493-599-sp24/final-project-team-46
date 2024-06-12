@@ -101,24 +101,33 @@ router.delete("/:id", requireAuthentication, rateLimitAuth, matchingInstructorMi
 })
 
 // Returns the list of all Submissions for an Assignment. This list should be paginated
-router.get('/:id/submissions', requireAuthentication, rateLimitAuth, matchingInstructorMiddleware, async function (req, res, next) {
+router.get('/:id/submissions', requireAuthentication, rateLimitAuth, requireUserMatchRecord((req) => req.params.id, (dataValues) => dataValues.instructorId, Course), async function (req, res, next) {
     const assignmentId = parseInt(req.params.id);
     try {
         const assignment = await Assignment.findOne({
             where: { id: assignmentId },
             include: [{
-                model: Submission,
-                // DEBUG
-                // attributes: ['id'] // Only fetch User IDs
+                model: Submission
             }]
         });
         
         if (assignment) {
-            let submissionList = assignment.submissions.map(submission => submission);
+            let page = parseInt(req.query.page) || 1;
+            page = page < 1 ? 1 : page;
+            const numPerPage = parseInt(req.query.numPerPage) || 5;
+            const offset = (page - 1) * numPerPage;
+
+            let submissionList = assignment.submissions.slice(offset, offset + numPerPage).map(submission => submission);
             for (const submission of submissionList) {
                 submission.file = `/media/submissions/${submission.file}`
             }
-            res.status(200).json(submissionList);
+            res.status(200).json({
+                submissions: submissionList,
+                pageNumber: page,
+                totalPages: Math.ceil(assignment.submissions.length / numPerPage),
+                pageSize: numPerPage,
+                totalCount: assignment.submissions.length
+            });
         } else {
             res.status(404).send({ "error": "Assignment not found" });
         }

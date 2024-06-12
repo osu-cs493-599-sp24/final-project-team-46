@@ -20,7 +20,7 @@ router.get("/", rateLimitNoAuth, async function (req, res, next) {
      */
     let page = parseInt(req.query.page) || 1
     page = page < 1 ? 1 : page
-    const numPerPage = 5
+    const numPerPage = parseInt(req.query.numPerPage) || 5;
     const offset = (page - 1) * numPerPage
 
     try {
