@@ -2,6 +2,7 @@ const { Router } = require('express')
 const { ValidationError } = require("sequelize")
 const { User } = require("../models/user")
 const { Course, CourseClientFields } = require("../models/course")
+const { requireAuthentication, requireAdmin, requireUserMatchRecord } = require("../lib/auth");
 
 const router = Router()
 
@@ -61,13 +62,7 @@ router.get("/:id", async function (req, res, next) {
 })
 
 // Creates a new Course with specified data and adds it to the application's database
-router.post("/", async function (req, res, next) {
-    /*
-     * TODO still need to make sure only an authenticated User with 'admin' role can create a new course
-     * So far all Users can create a new Course
-     * 403 response needs to be added here with a middleware 
-    */ 
-
+router.post("/", requireAuthentication, requireAdmin, async function (req, res, next) {
     try {
         
         // Validate that the instructorId corresponds to a user with the 'instructor' role
@@ -91,11 +86,9 @@ router.post("/", async function (req, res, next) {
 })
 
 // Performs a partial update on the data for the Course.
-router.patch("/:id", async function (req, res, next) {
+router.patch("/:id", requireAuthentication, requireUserMatchRecord((req) => req.params.id, (dataValues => dataValues.instructorId), Course), async function (req, res, next) {
     /*
-     * TODO: Make sure only auhtorized users can do this action
-     * Note that enrolled students and assignments cannot be modified via this endpoint
-     * Only an authenticated User with 'admin' role or an authenticated 'instructor' User whose ID matches the instructorId of the Course can update Course information.
+     * TODO: Make sure that enrolled students and assignments cannot be modified via this endpoint
      */ 
     const id = req.params.id
     try {
@@ -114,7 +107,7 @@ router.patch("/:id", async function (req, res, next) {
 })
 
 // Completely removes the data for the specified Course, including all enrolled students, all Assignments, etc
-router.delete("/:id", async function (req, res, next) {
+router.delete("/:id", requireAuthentication, requireAdmin, async function (req, res, next) {
     const id = req.params.id
 
     try {

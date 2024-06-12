@@ -18,7 +18,6 @@ const definition = {
         },
         
     },
-    // role was inside password before
     role: { type: DataTypes.ENUM("student", "instructor", "admin"), allowNull: false, defaultValue: "student "}
 };
 

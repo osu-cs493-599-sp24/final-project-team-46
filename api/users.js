@@ -3,15 +3,30 @@ const { ValidationError } = require("sequelize")
 
 const { User, UserClientFields } = require("../models/user")
 const { Course } = require("../models/course")
-const { generateAuthToken, authenticate, requireAuthentication } = require("../lib/auth")
+const { generateAuthToken, authenticate, requireAuthentication, requireUserMatchReq } = require("../lib/auth")
 const bcrypt = require('bcryptjs')
 const router = Router()
 
 
 // Create and store a new application User with specified data and adds it to the application's database.
 router.post("/", async function (req, res, next) {
+    if(req.body && req.body.role && req.body.role.toLowerCase() != "student") {
+        try {
+            const payload = authenticate(req);
+            if(payload.role != "admin") {
+                res.status(403).json({
+                    error: "You do not have permission to create a non-student user."
+                });
+                return;
+            }
+        } catch (e) {
+            res.status(403).json({
+                error: "Invalid authentication token."
+            });
+            return;
+        }
+    }
 
-    // Still need a 403 response for unauthenticated user to create admin/instructor
     try {
         const user = await User.create(req.body, { fields: UserClientFields })
         res.status(201).send({ id: user.id })
@@ -32,7 +47,7 @@ router.post("/login", async function (req, res, next) {
     // Check if email and password fields are present
     if (!email || !password) {
         return res.status(400).send({
-            error: "Request body must contain 'email' and 'password' fields"
+            error: "Request body must contain non-empty 'email' and 'password' fields"
         })
     }
 
@@ -42,7 +57,7 @@ router.post("/login", async function (req, res, next) {
 
         // Checks if user exists and password matches
         if (user && bcrypt.compareSync(password, user.password)) {
-            const token = generateAuthToken(user.id)
+            const token = generateAuthToken(user.id, user.role)
             res.status(200).send({
                 token: token
             })
@@ -61,7 +76,7 @@ router.post("/login", async function (req, res, next) {
 })
 
 // Returns information about the specified User.
-router.get("/:id", requireAuthentication, async function (req, res, next) {
+router.get("/:id", requireAuthentication, requireUserMatchReq((req) => req.params.id), async function (req, res, next) {
     const id = parseInt(req.params.id)
 
     try {
