@@ -6,6 +6,7 @@ const buildAssociations = require('./models/index')
 
 const api = require("./api");
 const sequelize = require("./lib/sequelize");
+const { redisClient } = require("./lib/redis");
 
 const app = express();
 const port = process.env.PORT || 8000;
@@ -24,8 +25,8 @@ app.use("*", function (err, req, res, next) {
     res.status(500).send({error: `Internal server error. Try again later.`});
 });
 
-sequelize.sync().then(() => {
+sequelize.sync().then(async function() {
     buildAssociations()
+    await redisClient.connect();
     app.listen(port, () => console.log("Server started on port", port))
 })
-// sequelize.sync().then(() => app.listen(port, () => console.log("Server started on port", port)));

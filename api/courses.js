@@ -2,12 +2,14 @@ const { Router } = require('express')
 const { ValidationError } = require("sequelize")
 const { User } = require("../models/user")
 const { Course, CourseClientFields } = require("../models/course")
-const { validateBody } = require("../lib/bodyValidator");
+const { requireAuthentication, requireAdmin, requireUserMatchRecord } = require("../lib/auth");
+const { rateLimitAuth, rateLimitNoAuth } = require("../lib/redis");
+const { validateBody, bodyExists } = require("../lib/bodyValidator");
 
 const router = Router()
 
 // Returns the list of all Courses. This list should be paginated
-router.get("/", async function (req, res, next) {
+router.get("/", rateLimitNoAuth, async function (req, res, next) {
     /*
      * Compute page number based on optional query string parameter `page`.
      * Make sure page is within allowed bounds.
@@ -40,7 +42,7 @@ router.get("/", async function (req, res, next) {
 })
 
 // Returns summary data about the Course, excluding the list of students enrolled in the course and the list of Assignments for the course.
-router.get("/:id", async function (req, res, next) {
+router.get("/:id", rateLimitNoAuth, async function (req, res, next) {
     const id = req.params.id
     
     try { 
@@ -62,13 +64,7 @@ router.get("/:id", async function (req, res, next) {
 })
 
 // Creates a new Course with specified data and adds it to the application's database
-router.post("/", validateBody(["subject", "number", "title", "term", "instructorId"]), async function (req, res, next) {
-    /*
-     * TODO still need to make sure only an authenticated User with 'admin' role can create a new course
-     * So far all Users can create a new Course
-     * 403 response needs to be added here with a middleware 
-    */ 
-
+router.post("/", requireAuthentication, rateLimitAuth, requireAdmin, validateBody(["subject", "number", "title", "term", "instructorId"]), async function (req, res, next) {
     try {
         
         // Validate that the instructorId corresponds to a user with the 'instructor' role
@@ -92,11 +88,9 @@ router.post("/", validateBody(["subject", "number", "title", "term", "instructor
 })
 
 // Performs a partial update on the data for the Course.
-router.patch("/:id", async function (req, res, next) {
+router.patch("/:id", requireAuthentication, rateLimitAuth, requireUserMatchRecord((req) => req.params.id, (dataValues => dataValues.instructorId), Course), bodyExists, async function (req, res, next) {
     /*
-     * TODO: Make sure only auhtorized users can do this action
-     * Note that enrolled students and assignments cannot be modified via this endpoint
-     * Only an authenticated User with 'admin' role or an authenticated 'instructor' User whose ID matches the instructorId of the Course can update Course information.
+     * TODO: Make sure that enrolled students and assignments cannot be modified via this endpoint
      */ 
     const id = req.params.id
     try {
@@ -115,7 +109,7 @@ router.patch("/:id", async function (req, res, next) {
 })
 
 // Completely removes the data for the specified Course, including all enrolled students, all Assignments, etc
-router.delete("/:id", async function (req, res, next) {
+router.delete("/:id", requireAuthentication, rateLimitAuth, requireAdmin, async function (req, res, next) {
     const id = req.params.id
 
     try {
