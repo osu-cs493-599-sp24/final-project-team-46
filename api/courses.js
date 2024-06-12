@@ -42,7 +42,7 @@ router.get("/", async function (req, res, next) {
 router.get("/:id", async function (req, res, next) {
     const id = req.params.id
     
-    try {
+    try { 
         const course = await Course.findByPk(id)
         if (course) {
             res.status(200).send({
@@ -52,7 +52,7 @@ router.get("/:id", async function (req, res, next) {
                 term: course.term,
                 instructorId: course.instructorId
             })
-        } else {
+        } else { // 404
             next()
         }
     } catch (e) {
