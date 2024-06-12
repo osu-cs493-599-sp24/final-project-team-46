@@ -1,6 +1,7 @@
 const { Router } = require('express')
 const { ValidationError } = require("sequelize")
 const { User } = require("../models/user")
+const { Assignment } = require("../models/assignment")
 const { Course, CourseClientFields } = require("../models/course")
 const { requireAuthentication, requireAdmin, requireUserMatchRecord } = require("../lib/auth");
 const { rateLimitAuth, rateLimitNoAuth } = require("../lib/redis");
@@ -70,7 +71,7 @@ router.post("/", requireAuthentication, rateLimitAuth, requireAdmin, validateBod
         // Validate that the instructorId corresponds to a user with the 'instructor' role
         const { instructorId } = req.body;
         const instructor = await User.findOne({ where: { id: instructorId, role: "instructor" } });
-        
+        console.log(instructor)
         if (!instructor) {
             return res.status(400).send({ error: "Instructor ID does not exist or the user is not an instructor." });
         }
@@ -126,7 +127,91 @@ router.delete("/:id", requireAuthentication, rateLimitAuth, requireAdmin, async 
     }
 })
 
+// Returns a list containing the User IDs of all students currently enrolled in the Course.
+router.get('/:id/students', async function (req, res, next) {
+    const courseId = parseInt(req.params.id);
+    try {
+        const course = await Course.findOne({
+            where: { id: courseId },
+            include: [{
+                model: User,
+                attributes: ['id'] // Only fetch User IDs
+            }]
+        });
+    
+        if (course) {
+            const studentIds = course.users.map(user => user.id);
+            res.status(200).json(studentIds); // Send the list of student IDs
+        } else {
+            res.status(404).send({ message: "Course not found" });
+        }
+    } catch (e) {
+        next(e);
+    }
+});
+
+// Update enrollment for a course
+router.post('/:id/students', async function (req, res, next) {
+    const courseId = parseInt(req.params.id);
+    const { add, remove } = req.body;
+
+    try {
+        const course = await Course.findOne({ where: { id: courseId } });
+
+        if (!course) {
+            return res.status(404).send({ message: "Course not found" });
+        }
+
+        // Enroll students
+        if (Array.isArray(add) && add.length > 0) {
+            for (const userId of add) {
+                const user = await User.findByPk(userId);
+                if (user) {
+                    await course.addUser(user);
+                }
+            }
+        }
+
+        // Unenroll students
+        if (Array.isArray(remove) && remove.length > 0) {
+            for (const userId of remove) {
+                const user = await User.findByPk(userId);
+                if (user) {
+                    await course.removeUser(user);
+                }
+            }
+        }
+
+        res.status(200).send({ message: "Enrollment updated successfully" });
+    } catch (e) {
+        next(e);
+    }
+});
+
+// Fetch a CSV file containing list of the students enrolled in the Course.
 
 
+// Returns a list containing the Assignment IDs of all Assignments for the Course.
+router.get("/:id/assignments", async function (req, res, next) {
 
+    const courseId = req.params.id
+
+    try {
+        // Check if the course exists
+        const course = await Course.findByPk(courseId);
+        if (!course) {
+            return res.status(404).send({ message: "Course not found" });
+        }
+
+        const assignments = await Assignment.findAll({
+            where: { courseId: courseId },
+            attributes: ['id']
+        })
+        res.status(200).send({
+            assignments: assignments
+        })
+    } catch (e) {
+        next(e)
+    }
+})
 module.exports = router

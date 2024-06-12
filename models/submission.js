@@ -18,3 +18,4 @@ const Submission = sequelize.define("submission", {
 });
 
 module.exports = { Submission };
+exports.SubmissionClientFields = Object.keys("submission");
