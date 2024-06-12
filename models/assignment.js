@@ -6,18 +6,6 @@ const Assignment = sequelize.define("assignment", {
     courseId: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        references: {
-            model: Course,
-            key: 'id'
-        },
-        validate: {
-            async isValidCourseId(value) {
-                const course = await Course.findByPk(value);
-                if (!course) {
-                    throw new Error("Invalid courseId. Course does not exist.");
-                }
-            }
-        }
     },
     title: {
         type: DataTypes.STRING,
@@ -36,9 +24,6 @@ const Assignment = sequelize.define("assignment", {
     }
 });
 
-// Ensure the relationship between Assignment and Course
-Assignment.belongsTo(Course, { foreignKey: 'courseId' });
-Course.hasMany(Assignment, { foreignKey: 'courseId' });
 
 module.exports = {
     Assignment,

@@ -66,4 +66,21 @@ router.patch("/:id", async function (req, res, next) {
     }
 })
 
+// Completely removes the data for the specified Assignment, including all submissions
+router.delete("/:id", async function (req, res, next) {
+    const id = req.params.id
+    try {
+        const assignment = await Assignment.findByPk(id)
+
+        if (!assignment) {
+            return res.status(404).send({ error: "Assignment not found" })
+        }
+
+        await Assignment.destroy({ where: { id: id }})
+        res.status(204).send({ message: "Assigment successfully deleted" })
+    } catch(e) {
+        next(e)
+    }
+})
+
 module.exports = router

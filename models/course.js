@@ -1,6 +1,7 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../lib/sequelize");
-const { User } = require("./user"); 
+// const { User } = require("./user"); 
+// const { Assignment } = require("./assignment")
 
 const definition = {
     subject: { type: DataTypes.STRING, allowNull: false },
@@ -10,16 +11,9 @@ const definition = {
     instructorId: { type: DataTypes.INTEGER, allowNull: false } 
 };
 
-// UNFINISHED!
 
 const Course = sequelize.define("course", definition);
 
-
-// A course belongs to an instructor
-Course.belongsTo(User, { foreignKey: 'instructorId', as: 'instructor' });
-
-// An instructor can teach multiple courses
-User.hasMany(Course, { foreignKey: 'instructorId', as: 'courses' });
 
 exports.Course = Course;
 exports.CourseClientFields = Object.keys(definition);

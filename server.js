@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const express = require("express");
 const morgan = require("morgan");
+const buildAssociations = require('./models/index')
 
 const api = require("./api");
 const sequelize = require("./lib/sequelize");
@@ -23,4 +24,8 @@ app.use("*", function (err, req, res, next) {
     res.status(500).send({error: `Internal server error. Try again later.`});
 });
 
-sequelize.sync().then(() => app.listen(port, () => console.log("Server started on port", port)));
+sequelize.sync().then(() => {
+    buildAssociations()
+    app.listen(port, () => console.log("Server started on port", port))
+})
+// sequelize.sync().then(() => app.listen(port, () => console.log("Server started on port", port)));
