@@ -1,4 +1,6 @@
 const { Router } = require("express");
+const express = require('express')
+
 
 // Importing sub routers for resources
 const usersRouter = require("./users")
@@ -7,6 +9,8 @@ const assignmentsRouter = require("./assignments")
 const submissionsRouter = require("./submissions")
 
 const router = Router();
+
+router.use("/media/submissions", express.static(`${__dirname}/uploads`))
 
 // Mounting the sub routers for specific paths
 router.use("/users", usersRouter)
