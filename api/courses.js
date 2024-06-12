@@ -2,6 +2,7 @@ const { Router } = require('express')
 const { ValidationError } = require("sequelize")
 const { User } = require("../models/user")
 const { Course, CourseClientFields } = require("../models/course")
+const { validateBody } = require("../lib/bodyValidator");
 
 const router = Router()
 
@@ -61,7 +62,7 @@ router.get("/:id", async function (req, res, next) {
 })
 
 // Creates a new Course with specified data and adds it to the application's database
-router.post("/", async function (req, res, next) {
+router.post("/", validateBody(["subject", "number", "title", "term", "instructorId"]), async function (req, res, next) {
     /*
      * TODO still need to make sure only an authenticated User with 'admin' role can create a new course
      * So far all Users can create a new Course
